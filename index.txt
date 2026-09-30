@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects Dashboard & Gantt Timeline - Quantum Flow</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0b0f19',
+                        darkcard: '#111726',
+                        darkborder: '#1e293b',
+                        pastelPeach: '#fff7ed',
+                        pastelMint: '#ecfdf5',
+                        pastelPink: '#fdf2f8',
+                        pastelLavender: '#faf5ff',
+                        pastelSky: '#f0f9ff',
+                        pastelAmber: '#fef3c7',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.04);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.35);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(107, 114, 128, 0.6);
+        }
+
+        /* Subtle Micro-Interactions for Buttons & Interactive elements */
+        .btn-micro {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-micro:hover {
+            transform: translateY(-1.5px);
+            box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.15);
+        }
+        .btn-micro:active {
+            transform: translateY(0.5px) scale(0.97);
+            box-shadow: none;
+        }
+
+        /* Flame Animation for Streak */
+        @keyframes flamePulse {
+            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.7)); }
+            50% { transform: scale(1.15) rotate(3deg); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.9)); }
+        }
+        .animate-flame {
+            animation: flamePulse 1.8s infinite ease-in-out;
+            display: inline-block;
+        }
+
+        /* Gantt Bar Styles */
+        .gantt-bar {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            cursor: grab;
+        }
+        .gantt-bar:active {
+            cursor: grabbing;
+            transform: scaleY(1.04);
+            z-index: 30;
+        }
+
+        /* Glassmorphism overlays */
+        .glass-panel {
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        /* Diamond Milestone */
+        .diamond-milestone {
+            width: 18px;
+            height: 18px;
+            transform: rotate(45deg);
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        .diamond-milestone:hover {
+            transform: rotate(45deg) scale(1.3);
+            filter: brightness(1.2);
+        }
+
+        /* Bento Grid Card Glow Hover */
+        .bento-card {
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 0 15px -3px rgba(59, 130, 246, 0.15);
+        }
+        .dark .bento-card:hover {
+            box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 0 20px -3px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-darkbg dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Header Navigation Bar -->
+    <header id="top-header" class="sticky top-0 z-40 bg-white/90 dark:bg-darkcard/90 border-b border-slate-200/80 dark:border-darkborder glass-panel px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        
+        <!-- Left: App Identity & Active Project Title -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 btn-micro cursor-pointer" onclick="switchMainView('projects')">
+                <i class="fa-solid fa-diagram-project text-base"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 id="header-app-title" class="font-bold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>Project: Quantum Flow Redesign</span>
+                    </h1>
+                    <span id="view-mode-badge" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/40">Gantt View</span>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Agile Sprint & Projects Dashboard</p>
+            </div>
+        </div>
+
+        <!-- Middle: Low-Friction Navigation View Switcher Tabs -->
+        <div class="flex items-center bg-slate-200/60 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs font-medium">
+            <button onclick="switchMainView('projects')" id="nav-btn-projects" class="btn-micro px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <i class="fa-solid fa-border-all text-xs"></i>
+                <span class="hidden sm:inline">Projects</span>
+            </button>
+            <button onclick="switchMainView('gantt')" id="nav-btn-gantt" class="btn-micro px-3 py-1.5 rounded-lg bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-xs font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-gantt text-xs"></i>
+                <span>Gantt Timeline</span>
+            </button>
+            <button onclick="openModal('kanbanModal')" class="btn-micro px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-list-check text-xs"></i>
+                <span class="hidden md:inline">Scrum Kanban</span>
+            </button>
+            <button onclick="openModal('agileModal')" class="btn-micro px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-trend-up text-xs"></i>
+                <span class="hidden lg:inline">Agile Sprints</span>
+            </button>
+            <button onclick="openModal('mindmapModal')" class="btn-micro px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-brain text-xs"></i>
+                <span class="hidden lg:inline">Mind Map</span>
+            </button>
+        </div>
+
+        <!-- Right: Uncluttered Control Badges & Actions -->
+        <div class="flex items-center gap-2">
+            <!-- Streak Gamification Badge -->
+            <div title="Click for bonus" onclick="triggerStreakBonus()" class="btn-micro cursor-pointer bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-red-500/10 hover:from-orange-500/20 dark:bg-orange-950/30 border border-orange-200/80 dark:border-orange-800/60 px-2.5 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400">
+                <span class="animate-flame text-sm">🔥</span>
+                <span id="streak-counter" class="hidden sm:inline">5-Day Sprint</span>
+            </div>
+
+            <!-- Velocity Meter Badge -->
+            <div class="hidden lg:flex bg-purple-500/10 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/60 px-2.5 py-1 rounded-full items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-300">
+                <i class="fa-solid fa-bolt text-purple-500 text-xs"></i>
+                <span id="velocity-counter">Velocity: 14/24 pts</span>
+            </div>
+
+            <!-- Add Task Micro Button -->
+            <button onclick="openNewTaskModal()" class="btn-micro px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-sm shadow-blue-500/20 flex items-center gap-1.5">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span class="hidden sm:inline">New Task</span>
+            </button>
+
+            <!-- Quick Overflow Menu Dropdown -->
+            <div class="relative group">
+                <button class="btn-micro p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs">
+                    <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                </button>
+                <div class="absolute right-0 top-full mt-1.5 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 hidden group-hover:block z-50 text-xs">
+                    <button onclick="toggleTheme()" class="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-200">
+                        <i id="theme-icon" class="fa-solid fa-sun text-amber-400 text-xs"></i>
+                        <span id="theme-label">Toggle Dark/Light</span>
+                    </button>
+                    <button onclick="toggleSound()" id="sound-toggle-btn" class="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-200">
+                        <i class="fa-solid fa-volume-high text-xs"></i>
+                        <span>Audio Sound Effects</span>
+                    </button>
+                    <button onclick="exportPdf()" class="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-200">
+                        <i class="fa-solid fa-file-pdf text-indigo-500 text-xs"></i> Export PDF Report
+                    </button>
+                    <button onclick="exportJSON()" class="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-200">
+                        <i class="fa-solid fa-download text-blue-500 text-xs"></i> Backup JSON Data
+                    </button>
+                    <label class="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 text-slate-700 dark:text-slate-200 cursor-pointer">
+                        <i class="fa-solid fa-upload text-emerald-500 text-xs"></i> Restore JSON
+                        <input type="file" id="import-file-input" onchange="importJSON(event)" class="hidden" accept=".json">
+                    </label>
+                    <hr class="my-1.5 border-slate-200 dark:border-slate-800">
+                    <button onclick="resetData()" class="w-full text-left px-3.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2.5">
+                        <i class="fa-solid fa-rotate-left text-xs"></i> Reset Demo Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col min-h-0 relative overflow-x-hidden">
+
+        <!-- ==================== VIEW 1: BENTO GRID PROJECTS CATALOG ==================== -->
+        <section id="view-projects" class="hidden flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col gap-6">
+            
+            <!-- Projects Filter Bar & Actions Header -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-darkcard p-4 rounded-2xl border border-slate-200/80 dark:border-darkborder shadow-xs">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-blue-500"></i>
+                        <span>Projects Catalog</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">High-production Bento Grid dashboard overviewing active sprint roadmaps</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Search Input -->
+                    <div class="relative w-48 sm:w-60">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="projects-search" oninput="renderProjectsBentoGrid()" placeholder="Search projects..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white">
+                    </div>
+
+                    <!-- Category Dropdown Filter -->
+                    <select id="projects-category-filter" onchange="renderProjectsBentoGrid()" class="bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white font-medium">
+                        <option value="ALL">All Categories</option>
+                        <option value="Design">Design & Prototyping</option>
+                        <option value="Development">Software Engineering</option>
+                        <option value="Infrastructure">Infrastructure</option>
+                    </select>
+
+                    <!-- New Project Button -->
+                    <button onclick="openNewProjectModal()" class="btn-micro px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs shadow-md shadow-blue-500/20 flex items-center gap-2">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Create Project</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- High-Production Bento Grid Layout Container -->
+            <div id="projects-bento-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)]">
+                <!-- Dynamic Bento Cards injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- ==================== VIEW 2: INTERACTIVE GANTT TIMELINE VIEW ==================== -->
+        <section id="view-gantt" class="flex-1 flex flex-col min-h-0 w-full">
+
+            <!-- Sub-header Metrics Ribbon -->
+            <div id="gantt-metrics-ribbon" class="bg-slate-50 dark:bg-darkcard/80 border-b border-slate-200/80 dark:border-darkborder px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-medium">Total Tasks:</span>
+                        <span id="metric-total-tasks" class="font-bold text-slate-800 dark:text-white">8</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400 font-medium">Avg Progress:</span>
+                        <div class="w-20 bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden inline-block">
+                            <div id="metric-avg-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 43%;"></div>
+                        </div>
+                        <span id="metric-avg-progress" class="font-bold text-emerald-600 dark:text-emerald-400">43%</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-medium">Completed:</span>
+                        <span id="metric-completed-count" class="font-bold text-blue-600 dark:text-blue-400">2</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-medium">Milestones:</span>
+                        <span id="metric-milestones-count" class="font-bold text-amber-500">2</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span>Drag timeline bars to adjust task schedule</span>
+                </div>
+            </div>
+
+            <!-- Toolbar Controls Row -->
+            <div class="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-darkborder px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2 flex-wrap flex-1 max-w-xl">
+                    <div class="relative w-48 sm:w-60">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="gantt-search-input" oninput="renderGanttChart()" placeholder="Search tasks or assignees..." class="w-full pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200">
+                    </div>
+
+                    <select id="gantt-priority-filter" onchange="renderGanttChart()" class="bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 font-medium">
+                        <option value="ALL">All Priorities</option>
+                        <option value="HIGH">HIGH Priority</option>
+                        <option value="MEDIUM">MEDIUM Priority</option>
+                        <option value="LOW">LOW Priority</option>
+                    </select>
+
+                    <select id="gantt-date-format" onchange="toggleDateFormat()" class="bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 font-medium">
+                        <option value="dayNumbers">Day Numbers (Day 1..34)</option>
+                        <option value="calendarDates">Calendar Dates (Sep/Oct)</option>
+                    </select>
+                </div>
+
+                <!-- Zoom Scale Buttons -->
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 font-medium text-[11px]">Zoom:</span>
+                    <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <button onclick="setZoomScale('compact')" id="zoom-compact" class="btn-micro px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Compact</button>
+                        <button onclick="setZoomScale('standard')" id="zoom-standard" class="btn-micro px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-600 text-white shadow-xs">Standard</button>
+                        <button onclick="setZoomScale('detailed')" id="zoom-detailed" class="btn-micro px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Detailed</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gantt Split View: Task Table + Timeline -->
+            <div class="flex-1 flex min-h-0 overflow-hidden relative">
+                <!-- Task Details Table -->
+                <div class="w-[380px] sm:w-[440px] md:w-[480px] flex-shrink-0 border-r border-slate-200/80 dark:border-darkborder bg-white dark:bg-darkcard flex flex-col min-h-0 z-10 shadow-md">
+                    <div class="h-10 border-b border-slate-200/80 dark:border-darkborder bg-slate-50 dark:bg-slate-900/90 px-3 flex items-center text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <div class="w-2/5 truncate">Task Name</div>
+                        <div class="w-1/4 text-center truncate">Assignee</div>
+                        <div class="w-1/6 text-center truncate">Priority</div>
+                        <div class="w-1/6 text-center truncate">Prog.</div>
+                        <div class="w-16 text-center">Shift</div>
+                        <div class="w-12 text-center">Actions</div>
+                    </div>
+
+                    <div id="gantt-task-rows-container" class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <!-- Dynamic task rows injected here -->
+                    </div>
+                </div>
+
+                <!-- Timeline Header & Grid Canvas -->
+                <div id="gantt-timeline-wrapper" class="flex-1 overflow-x-auto overflow-y-auto bg-slate-50 dark:bg-darkbg relative min-h-0 flex flex-col">
+                    <div id="timeline-header-container" class="sticky top-0 z-20 flex flex-col bg-slate-100 dark:bg-slate-900 border-b border-slate-200/80 dark:border-darkborder min-w-max shadow-xs">
+                        <div class="h-5 flex items-center text-[10px] font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-slate-800">
+                            <div class="w-[300px] pl-4 text-left">SEP 2026</div>
+                            <div class="pl-24 text-left">OCT 2026</div>
+                        </div>
+                        <div id="timeline-days-header-row" class="h-6 flex items-center text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                            <!-- Dynamic Day Headers -->
+                        </div>
+                    </div>
+
+                    <div id="timeline-grid-body" class="relative flex-1 min-w-max min-h-[400px]">
+                        <div id="timeline-grid-background" class="absolute inset-0 pointer-events-none flex">
+                            <!-- Injected background grid columns -->
+                        </div>
+                        <div id="gantt-bars-container" class="relative z-10 py-1">
+                            <!-- Injected Gantt Bars -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- MODAL 1: NEW / EDIT TASK MODAL -->
+    <div id="taskModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 id="task-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Create New Task</h3>
+                <button onclick="closeModal('taskModal')" class="btn-micro text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="task-form" onsubmit="handleSaveTask(event)" class="flex flex-col gap-3.5 text-xs">
+                <input type="hidden" id="modal-task-id">
+                
+                <div>
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Task Title</label>
+                    <input type="text" id="modal-task-name" required placeholder="e.g. Design Token Refinement" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Assignee</label>
+                        <input type="text" id="modal-task-assignee" placeholder="e.g. Alex R." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Story Points</label>
+                        <input type="number" id="modal-task-points" min="1" max="21" value="3" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Start Day</label>
+                        <input type="number" id="modal-task-start" min="1" max="34" value="1" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Duration (Days)</label>
+                        <input type="number" id="modal-task-duration" min="1" max="20" value="5" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Priority</label>
+                        <select id="modal-task-priority" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                            <option value="HIGH">HIGH</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="LOW">LOW</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Progress (%)</label>
+                        <input type="number" id="modal-task-progress" min="0" max="100" value="0" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Is Milestone?</label>
+                        <select id="modal-task-milestone" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                            <option value="false">No (Standard Task)</option>
+                            <option value="true">Yes (Milestone Diamond)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('taskModal')" class="btn-micro px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl">Cancel</button>
+                    <button type="submit" class="btn-micro px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-md shadow-blue-500/20">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CREATE NEW PROJECT MODAL -->
+    <div id="projectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Create New Project</h3>
+                <button onclick="closeModal('projectModal')" class="btn-micro text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="project-form" onsubmit="handleCreateProject(event)" class="flex flex-col gap-3.5 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Project Title</label>
+                    <input type="text" id="modal-project-title" required placeholder="e.g. AI Workflow Engine" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category Subtitle</label>
+                    <input type="text" id="modal-project-subtitle" required placeholder="e.g. NextGen ML Pipeline" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Bento Accent Theme</label>
+                        <select id="modal-project-theme" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                            <option value="sky">Sky Blue</option>
+                            <option value="peach">Soft Peach</option>
+                            <option value="mint">Fresh Mint</option>
+                            <option value="pink">Blush Pink</option>
+                            <option value="lavender">Lavender</option>
+                            <option value="amber">Warm Amber</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Deadline Badge</label>
+                        <input type="text" id="modal-project-deadline" placeholder="e.g. 2 Weeks Left" value="2 Weeks Left" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('projectModal')" class="btn-micro px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl">Cancel</button>
+                    <button type="submit" class="btn-micro px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-md shadow-blue-500/20">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: KANBAN BOARD OVERLAY -->
+    <div id="kanbanModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-5xl w-full h-[82vh] p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-blue-500 text-lg"></i>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Scrum Kanban Board</h3>
+                </div>
+                <button onclick="closeModal('kanbanModal')" class="btn-micro text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="kanban-board-container" class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 overflow-y-auto p-1">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: AGILE SPRINT BURNDOWN MODAL -->
+    <div id="agileModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-up text-purple-500 text-lg"></i>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Agile Velocity & Analytics</h3>
+                </div>
+                <button onclick="closeModal('agileModal')" class="btn-micro text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div class="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-100 dark:border-blue-900/40">
+                    <div class="text-xs text-slate-500">Planned Story Points</div>
+                    <div class="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">24 pts</div>
+                </div>
+                <div class="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
+                    <div class="text-xs text-slate-500">Completed Velocity</div>
+                    <div class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">14 pts</div>
+                </div>
+                <div class="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-xl border border-purple-100 dark:border-purple-900/40">
+                    <div class="text-xs text-slate-500">Sprint Health Score</div>
+                    <div class="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1">92%</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+                <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Sprint Burn-Down Visualizer</h4>
+                <div class="h-32 flex items-end justify-between gap-2 px-2 pt-4 border-b border-slate-300 dark:border-slate-700">
+                    <div class="w-full bg-blue-500/80 rounded-t h-[90%]" title="Day 1 - 24 pts"></div>
+                    <div class="w-full bg-blue-500/80 rounded-t h-[80%]" title="Day 2 - 21 pts"></div>
+                    <div class="w-full bg-blue-500/80 rounded-t h-[70%]" title="Day 3 - 18 pts"></div>
+                    <div class="w-full bg-blue-500/80 rounded-t h-[55%]" title="Day 4 - 15 pts"></div>
+                    <div class="w-full bg-emerald-500 rounded-t h-[40%]" title="Day 5 - 10 pts (Today)"></div>
+                    <div class="w-full bg-slate-300 dark:bg-slate-700 rounded-t h-[25%]" title="Day 6 Planned"></div>
+                    <div class="w-full bg-slate-300 dark:bg-slate-700 rounded-t h-[0%]" title="Day 7 Target"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400 px-1">
+                    <span>Day 1</span><span>Day 2</span><span>Day 3</span><span>Day 4</span><span>Day 5</span><span>Day 6</span><span>Day 7</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: MIND MAP PREP OVERLAY -->
+    <div id="mindmapModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-4xl w-full h-[75vh] p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-brain text-amber-500 text-lg"></i>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Project Dependency Mind Map</h3>
+                </div>
+                <button onclick="closeModal('mindmapModal')" class="btn-micro text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 p-4 relative overflow-hidden flex items-center justify-center">
+                <svg id="mindmap-svg" class="w-full h-full">
+                    <!-- Dynamic Mind Map SVG Branches render via JS -->
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        const DEFAULT_PROJECTS = [
+            {
+                id: 'proj-1',
+                title: 'Quantum Flow Redesign',
+                subtitle: 'Next-Gen UX & Design System',
+                category: 'Design',
+                theme: 'sky',
+                deadline: '5 Days Left',
+                tasks: [
+                    { id: 't1', title: 'Project Kickoff & Specs', assignee: 'Alex R.', points: 3, priority: 'HIGH', progress: 100, startDay: 1, duration: 6, isMilestone: false, revisionDays: 0, subtasks: [] },
+                    { id: 't2', title: 'Specs & Scope Revisions', assignee: 'Alex R.', points: 3, priority: 'HIGH', progress: 0, startDay: 7, duration: 5, isMilestone: false, revisionDays: 0, subtasks: [] },
+                    { id: 't3', title: 'UI/UX Wireframing', assignee: 'Sarah M.', points: 5, priority: 'HIGH', progress: 85, startDay: 10, duration: 8, isMilestone: false, revisionDays: 2, subtasks: [] },
+                    { id: 't4', title: 'Design Sign-Off Gate', assignee: 'Sarah M.', points: 1, priority: 'HIGH', progress: 100, startDay: 22, duration: 1, isMilestone: true, revisionDays: 0, subtasks: [] },
+                    { id: 't5', title: 'Frontend Architecture', assignee: 'David K.', points: 8, priority: 'MEDIUM', progress: 40, startDay: 20, duration: 9, isMilestone: false, revisionDays: 0, subtasks: [] },
+                    { id: 't6', title: 'Backend API Integration', assignee: 'Elena P.', points: 13, priority: 'HIGH', progress: 15, startDay: 26, duration: 9, isMilestone: false, revisionDays: 0, subtasks: [] },
+                    { id: 't7', title: 'QA & Security Testing', assignee: 'Marcus T.', points: 5, priority: 'LOW', progress: 0, startDay: 30, duration: 4, isMilestone: false, revisionDays: 0, subtasks: [] },
+                    { id: 't8', title: 'Production Launch Gate', assignee: 'Team', points: 2, priority: 'HIGH', progress: 0, startDay: 34, duration: 1, isMilestone: true, revisionDays: 0, subtasks: [] }
+                ]
+            },
+            {
+                id: 'proj-2',
+                title: 'Mobile App Prototyping',
+                subtitle: 'iOS & Android Native Design',
+                category: 'Design',
+                theme: 'peach',
+                deadline: '2 Weeks Left',
+                tasks: [
+                    { id: 't21', title: 'User Research & Interviews', assignee: 'Sarah M.', points: 5, priority: 'HIGH', progress: 100, startDay: 1, duration: 5, isMilestone: false, revisionDays: 0, subtasks: [] },
+                    { id: 't22', title: 'Flutter App Skeleton', assignee: 'Alex R.', points: 8, priority: 'MEDIUM', progress: 50, startDay: 6, duration: 8, isMilestone: false, revisionDays: 0, subtasks: [] }
+                ]
+            },
+            {
+                id: 'proj-3',
+                title: 'Medical Analytics Dashboard',
+                subtitle: 'HIPAA Compliant UI Pipeline',
+                category: 'Development',
+                theme: 'mint',
+                deadline: '3 Weeks Left',
+                tasks: [
+                    { id: 't31', title: 'Data Schema Pipeline', assignee: 'Elena P.', points: 13, priority: 'HIGH', progress: 20, startDay: 3, duration: 10, isMilestone: false, revisionDays: 0, subtasks: [] }
+                ]
+            },
+            {
+                id: 'proj-4',
+                title: 'E-Commerce Storefront',
+                subtitle: 'High-Converting Checkout Engine',
+                category: 'Development',
+                theme: 'lavender',
+                deadline: '1 Month Left',
+                tasks: [
+                    { id: 't41', title: 'Stripe Payment Flow', assignee: 'David K.', points: 5, priority: 'HIGH', progress: 90, startDay: 2, duration: 6, isMilestone: false, revisionDays: 0, subtasks: [] }
+                ]
+            }
+        ];
+
+        let state = {
+            theme: 'dark',
+            soundMuted: false,
+            activeView: 'gantt', // 'projects' | 'gantt'
+            selectedProjectId: 'proj-1',
+            zoomScale: 'standard', // 'compact' | 'standard' | 'detailed'
+            priorityFilter: 'ALL',
+            searchQuery: '',
+            dateFormat: 'dayNumbers',
+            projects: JSON.parse(localStorage.getItem('quantum_flow_projects')) || DEFAULT_PROJECTS
+        };
+
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (state.soundMuted) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+
+                if (type === 'shift') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(660, now + 0.08);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'complete') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(320, now);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'delete') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.15);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function toggleSound() {
+            state.soundMuted = !state.soundMuted;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.innerHTML = state.soundMuted ? '<i class="fa-solid fa-volume-xmark text-red-400 text-xs"></i> <span>Muted</span>' : '<i class="fa-solid fa-volume-high text-xs"></i> <span>Audio Sound Effects</span>';
+        }
+
+        function toggleTheme() {
+            playSound('click');
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const themeLabel = document.getElementById('theme-label');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                state.theme = 'light';
+                themeIcon.className = 'fa-solid fa-moon text-indigo-600 text-xs';
+                themeLabel.textContent = 'Light Mode';
+            } else {
+                html.classList.add('dark');
+                state.theme = 'dark';
+                themeIcon.className = 'fa-solid fa-sun text-amber-400 text-xs';
+                themeLabel.textContent = 'Dark Mode';
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('quantum_flow_projects', JSON.stringify(state.projects));
+        }
+
+        function getCurrentProject() {
+            return state.projects.find(p => p.id === state.selectedProjectId) || state.projects[0];
+        }
+
+        function switchMainView(view) {
+            playSound('click');
+            state.activeView = view;
+            const projectsView = document.getElementById('view-projects');
+            const ganttView = document.getElementById('view-gantt');
+            const navProjects = document.getElementById('nav-btn-projects');
+            const navGantt = document.getElementById('nav-btn-gantt');
+            const modeBadge = document.getElementById('view-mode-badge');
+
+            if (view === 'projects') {
+                projectsView.classList.remove('hidden');
+                ganttView.classList.add('hidden');
+                navProjects.className = "btn-micro px-3 py-1.5 rounded-lg bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-xs font-semibold flex items-center gap-1.5";
+                navGantt.className = "btn-micro px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 font-medium";
+                modeBadge.textContent = "Projects Catalog";
+                renderProjectsBentoGrid();
+            } else {
+                ganttView.classList.remove('hidden');
+                projectsView.classList.add('hidden');
+                navGantt.className = "btn-micro px-3 py-1.5 rounded-lg bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-xs font-semibold flex items-center gap-1.5";
+                navProjects.className = "btn-micro px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 font-medium";
+                modeBadge.textContent = "Gantt View";
+                renderGanttChart();
+            }
+        }
+
+        /* High-Production Bento Grid Layout Renderer */
+        function renderProjectsBentoGrid() {
+            const grid = document.getElementById('projects-bento-grid');
+            grid.innerHTML = '';
+
+            const query = (document.getElementById('projects-search').value || '').toLowerCase();
+            const cat = document.getElementById('projects-category-filter').value;
+
+            const filteredProjects = state.projects.filter(proj => {
+                const matchesSearch = proj.title.toLowerCase().includes(query) || proj.subtitle.toLowerCase().includes(query);
+                const matchesCat = cat === 'ALL' || proj.category === cat;
+                return matchesSearch && matchesCat;
+            });
+
+            if (filteredProjects.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs font-medium">No projects found matching criteria.</div>`;
+                return;
+            }
+
+            // 1. Featured Hero Bento Card (Spans 2 columns, 2 rows)
+            const heroProj = filteredProjects[0];
+            if (heroProj) {
+                const total = heroProj.tasks.length;
+                const avgProg = total > 0 ? Math.round(heroProj.tasks.reduce((a, b) => a + b.progress, 0) / total) : 0;
+
+                const heroCardHtml = `
+                    <div class="col-span-1 md:col-span-2 row-span-2 bento-card bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white rounded-3xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+                        <!-- Background Glow Elements -->
+                        <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-white/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500"></div>
+                        
+                        <!-- Top Header Tag & Options -->
+                        <div class="flex items-center justify-between text-xs z-10">
+                            <span class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md font-bold tracking-wider uppercase text-[10px]"><i class="fa-solid fa-star text-amber-300 mr-1"></i> Featured Flagship</span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-1 rounded-full bg-black/20 text-white/90 text-[11px] font-medium"><i class="fa-regular fa-clock mr-1"></i> ${heroProj.deadline}</span>
+                                <button onclick="deleteProject('${heroProj.id}')" class="btn-micro p-1.5 text-white/70 hover:text-red-300" title="Delete Project"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Main Title & Details -->
+                        <div class="my-4 z-10">
+                            <h3 onclick="selectProjectAndOpenGantt('${heroProj.id}')" class="text-2xl font-extrabold cursor-pointer hover:underline tracking-tight">${heroProj.title}</h3>
+                            <p class="text-xs text-blue-100 mt-1 font-medium">${heroProj.subtitle}</p>
+                        </div>
+
+                        <!-- Middle Task Progress Matrix -->
+                        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 z-10 flex flex-col gap-3">
+                            <div class="flex items-center justify-between text-xs font-semibold">
+                                <span>Sprint Execution Velocity</span>
+                                <span class="text-sm font-extrabold text-emerald-300">${avgProg}%</span>
+                            </div>
+                            <div class="w-full bg-black/20 rounded-full h-3 overflow-hidden p-0.5 border border-white/10">
+                                <div class="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-500" style="width: ${avgProg}%"></div>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-blue-100/80 pt-1">
+                                <span>${total} Active Sprint Tasks</span>
+                                <span>Milestones: ${heroProj.tasks.filter(t=>t.isMilestone).length}</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer Launch Action Button -->
+                        <div class="flex items-center justify-between pt-3 z-10">
+                            <div class="flex items-center -space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-400 text-slate-900 font-bold text-xs flex items-center justify-center border-2 border-indigo-600 shadow-sm">AR</div>
+                                <div class="w-8 h-8 rounded-full bg-purple-400 text-slate-900 font-bold text-xs flex items-center justify-center border-2 border-indigo-600 shadow-sm">SM</div>
+                                <div class="w-8 h-8 rounded-full bg-emerald-400 text-slate-900 font-bold text-xs flex items-center justify-center border-2 border-indigo-600 shadow-sm">DK</div>
+                            </div>
+
+                            <button onclick="selectProjectAndOpenGantt('${heroProj.id}')" class="btn-micro px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs rounded-xl shadow-md flex items-center gap-2">
+                                <span>Launch Gantt Timeline</span>
+                                <i class="fa-solid fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', heroCardHtml);
+            }
+
+            // 2. Metrics Analytics Bento Box (1 col, 1 row)
+            const totalTasksAll = state.projects.reduce((acc, p) => acc + p.tasks.length, 0);
+            const statsBentoHtml = `
+                <div class="col-span-1 bento-card bg-white dark:bg-darkcard border border-slate-200/80 dark:border-darkborder rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-slate-400">Portfolio Pulse</span>
+                        <i class="fa-solid fa-chart-line text-blue-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-extrabold text-slate-900 dark:text-white">${state.projects.length} Active</div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${totalTasksAll} Tracked Subtasks</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>92% Sprint Health Score</span>
+                    </div>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', statsBentoHtml);
+
+            // 3. Upcoming Milestone Bento Box (1 col, 1 row)
+            const milestoneBentoHtml = `
+                <div class="col-span-1 bento-card bg-white dark:bg-darkcard border border-slate-200/80 dark:border-darkborder rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-amber-500">Next Milestone</span>
+                        <i class="fa-solid fa-gem text-amber-500"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white text-sm">Design Sign-Off Gate</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Due Day 22 · Alex R.</p>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-bold">On Schedule</span>
+                        <span class="text-slate-400 font-medium">Oct 2026</span>
+                    </div>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', milestoneBentoHtml);
+
+            // 4. Remaining Project Bento Cards (1 col each)
+            const remainingProjects = filteredProjects.slice(1);
+            const themeClasses = {
+                sky: 'bg-pastelSky border-sky-200/80 dark:bg-darkcard dark:border-sky-900/40',
+                peach: 'bg-pastelPeach border-orange-200/80 dark:bg-darkcard dark:border-orange-900/40',
+                mint: 'bg-pastelMint border-emerald-200/80 dark:bg-darkcard dark:border-emerald-900/40',
+                pink: 'bg-pastelPink border-pink-200/80 dark:bg-darkcard dark:border-pink-900/40',
+                lavender: 'bg-pastelLavender border-purple-200/80 dark:bg-darkcard dark:border-purple-900/40',
+                amber: 'bg-pastelAmber border-amber-200/80 dark:bg-darkcard dark:border-amber-900/40'
+            };
+
+            remainingProjects.forEach(proj => {
+                const total = proj.tasks.length;
+                const avgProg = total > 0 ? Math.round(proj.tasks.reduce((a, b) => a + b.progress, 0) / total) : 0;
+
+                const cardHtml = `
+                    <div class="col-span-1 bento-card ${themeClasses[proj.theme] || themeClasses.sky} border rounded-3xl p-5 shadow-xs flex flex-col justify-between gap-3 relative group">
+                        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">${proj.deadline}</span>
+                            <button onclick="deleteProject('${proj.id}')" class="btn-micro p-1 text-slate-400 hover:text-red-500" title="Delete Project"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+
+                        <div>
+                            <h3 onclick="selectProjectAndOpenGantt('${proj.id}')" class="text-base font-bold text-slate-900 dark:text-white cursor-pointer hover:text-blue-600 transition-colors">${proj.title}</h3>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate">${proj.subtitle}</p>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between text-[11px] font-semibold">
+                                <span class="text-slate-600 dark:text-slate-400">Progress</span>
+                                <span class="text-blue-600 dark:text-blue-400 font-bold">${avgProg}%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                                <div class="bg-blue-600 h-full rounded-full transition-all duration-500" style="width: ${avgProg}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 font-medium">${total} Tasks</span>
+                            <button onclick="selectProjectAndOpenGantt('${proj.id}')" class="btn-micro px-3 py-1 bg-white dark:bg-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500 text-blue-600 dark:text-white font-semibold text-xs rounded-xl shadow-xs border border-blue-200 dark:border-transparent flex items-center gap-1">
+                                <span>Open</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // 5. Add Project Bento Dropzone Box (1 col)
+            const addProjectBentoHtml = `
+                <div onclick="openNewProjectModal()" class="col-span-1 bento-card border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-3xl p-5 flex flex-col items-center justify-center text-center cursor-pointer group bg-slate-50/50 dark:bg-slate-900/20 transition-colors">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-plus text-base"></i>
+                    </div>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600">Create New Project</span>
+                    <span class="text-[10px] text-slate-400 mt-0.5">Add to Bento Catalog</span>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', addProjectBentoHtml);
+        }
+
+        function selectProjectAndOpenGantt(projId) {
+            state.selectedProjectId = projId;
+            const proj = getCurrentProject();
+            switchMainView('gantt');
+        }
+
+        function renderGanttChart() {
+            const proj = getCurrentProject();
+            document.getElementById('header-app-title').innerHTML = `<span onclick="editProjectTitleInline()" title="Click to rename" class="cursor-pointer hover:text-blue-500 transition-colors">${proj.title}</span> <i onclick="editProjectTitleInline()" class="fa-solid fa-pen text-[10px] text-slate-400 hover:text-blue-500 cursor-pointer ml-1"></i>`;
+
+            const query = (document.getElementById('gantt-search-input').value || '').toLowerCase();
+            const priority = document.getElementById('gantt-priority-filter').value;
+
+            let filteredTasks = proj.tasks.filter(t => {
+                const matchesSearch = t.title.toLowerCase().includes(query) || t.assignee.toLowerCase().includes(query);
+                const matchesPriority = priority === 'ALL' || t.priority === priority;
+                return matchesSearch && matchesPriority;
+            });
+
+            const totalTasks = filteredTasks.length;
+            const completedCount = filteredTasks.filter(t => t.progress === 100).length;
+            const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((a, b) => a + b.progress, 0) / totalTasks) : 0;
+            const milestonesCount = filteredTasks.filter(t => t.isMilestone).length;
+
+            document.getElementById('metric-total-tasks').textContent = totalTasks;
+            document.getElementById('metric-completed-count').textContent = completedCount;
+            document.getElementById('metric-avg-progress').textContent = `${avgProgress}%`;
+            document.getElementById('metric-avg-bar').style.width = `${avgProgress}%`;
+            document.getElementById('metric-milestones-count').textContent = milestonesCount;
+
+            const columnWidths = { compact: 36, standard: 54, detailed: 72 };
+            const colWidth = columnWidths[state.zoomScale] || 54;
+            const totalDays = 34;
+
+            // Day Headers
+            const daysHeaderRow = document.getElementById('timeline-days-header-row');
+            daysHeaderRow.innerHTML = '';
+            for (let d = 1; d <= totalDays; d++) {
+                const isToday = d === 6;
+                const isWeekend = [1, 7, 8, 14, 15, 21, 22, 28, 29, 34].includes(d);
+
+                let headerText = state.dateFormat === 'dayNumbers' ? `Day ${d}` : `Oct ${d}`;
+                if (isToday) headerText = state.dateFormat === 'dayNumbers' ? `Day 6 (Today)` : `Oct 6 (Today)`;
+
+                const dayCol = document.createElement('div');
+                dayCol.style.width = `${colWidth}px`;
+                dayCol.className = `flex-shrink-0 text-center text-[10px] py-1 border-r border-slate-200/80 dark:border-slate-800 ${isToday ? 'bg-blue-600 text-white font-extrabold rounded-t-md shadow-xs' : isWeekend ? 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300' : 'text-slate-600 dark:text-slate-400'}`;
+                dayCol.textContent = headerText;
+                daysHeaderRow.appendChild(dayCol);
+            }
+
+            // Grid Background
+            const gridBg = document.getElementById('timeline-grid-background');
+            gridBg.innerHTML = '';
+            for (let d = 1; d <= totalDays; d++) {
+                const isToday = d === 6;
+                const isWeekend = [1, 7, 8, 14, 15, 21, 22, 28, 29, 34].includes(d);
+
+                const colLine = document.createElement('div');
+                colLine.style.width = `${colWidth}px`;
+                colLine.className = `flex-shrink-0 border-r border-slate-200/40 dark:border-slate-800/40 h-full ${isToday ? 'bg-blue-500/10 border-l-2 border-r-2 border-blue-500/40' : isWeekend ? 'bg-slate-100/60 dark:bg-slate-900/30' : ''}`;
+                gridBg.appendChild(colLine);
+            }
+
+            // Task Rows & Bars
+            const taskRowsContainer = document.getElementById('gantt-task-rows-container');
+            const barsContainer = document.getElementById('gantt-bars-container');
+            taskRowsContainer.innerHTML = '';
+            barsContainer.innerHTML = '';
+
+            filteredTasks.forEach((task) => {
+                const priorityBadges = {
+                    HIGH: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/60',
+                    MEDIUM: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900/60',
+                    LOW: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-900/60'
+                };
+
+                // Table Row
+                const taskRow = document.createElement('div');
+                taskRow.className = 'flex flex-col hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors';
+                
+                taskRow.innerHTML = `
+                    <div class="h-11 px-3 flex items-center text-xs gap-2">
+                        <div class="w-2/5 flex items-center gap-1.5 min-w-0">
+                            <span class="w-2 h-2 rounded-full ${task.progress === 100 ? 'bg-emerald-500' : 'bg-blue-500'} flex-shrink-0"></span>
+                            <span onclick="inlineEditTaskTitle('${task.id}')" class="font-semibold text-slate-800 dark:text-slate-200 truncate cursor-pointer hover:text-blue-500" title="${task.title}">${task.title}</span>
+                        </div>
+                        <div class="w-1/4 text-center truncate">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                ${task.assignee} · <span class="font-bold text-purple-600 dark:text-purple-400">${task.points}p</span>
+                            </span>
+                        </div>
+                        <div class="w-1/6 text-center">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${priorityBadges[task.priority]}">${task.priority}</span>
+                        </div>
+                        <div class="w-1/6 text-center font-bold text-slate-700 dark:text-slate-300 text-[11px] cursor-pointer" onclick="quickUpdateProgress('${task.id}')">
+                            ${task.progress}%
+                        </div>
+                        <div class="w-16 flex items-center justify-center gap-1">
+                            <button onclick="shiftTask('${task.id}', -1)" class="btn-micro w-5 h-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded flex items-center justify-center text-[10px]">◄</button>
+                            <button onclick="shiftTask('${task.id}', 1)" class="btn-micro w-5 h-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded flex items-center justify-center text-[10px]">►</button>
+                            <button onclick="addRevision('${task.id}')" class="btn-micro px-1 bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 rounded text-[9px] font-bold">+Rev</button>
+                        </div>
+                        <div class="w-12 flex items-center justify-center gap-1.5 text-slate-400">
+                            <button onclick="openEditTaskModal('${task.id}')" class="btn-micro hover:text-blue-500"><i class="fa-solid fa-pen text-[11px]"></i></button>
+                            <button onclick="deleteTask('${task.id}')" class="btn-micro hover:text-red-500"><i class="fa-solid fa-trash text-[11px]"></i></button>
+                        </div>
+                    </div>
+                `;
+                taskRowsContainer.appendChild(taskRow);
+
+                // Bar Row
+                const barRow = document.createElement('div');
+                barRow.className = 'h-11 relative flex items-center';
+
+                const leftPos = (task.startDay - 1) * colWidth;
+                const barWidth = task.duration * colWidth;
+
+                if (task.isMilestone) {
+                    const diamond = document.createElement('div');
+                    diamond.style.left = `${leftPos + (colWidth / 2) - 9}px`;
+                    diamond.className = 'absolute diamond-milestone bg-amber-500 shadow-lg shadow-amber-500/50 cursor-pointer border-2 border-white dark:border-slate-900 z-20';
+                    diamond.title = `${task.title} (Milestone Day ${task.startDay})`;
+                    barRow.appendChild(diamond);
+                } else {
+                    const bar = document.createElement('div');
+                    bar.style.left = `${leftPos + 2}px`;
+                    bar.style.width = `${barWidth - 4}px`;
+
+                    let barGradient = 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white';
+                    if (task.progress === 100) {
+                        barGradient = 'bg-gradient-to-r from-blue-500 to-emerald-600 text-white shadow-xs';
+                    }
+
+                    bar.className = `absolute h-7 rounded-lg gantt-bar ${barGradient} flex items-center px-2 shadow-xs text-[11px] font-bold overflow-hidden select-none z-10`;
+                    
+                    const progFill = document.createElement('div');
+                    progFill.className = 'absolute top-0 left-0 bottom-0 bg-white/20 pointer-events-none';
+                    progFill.style.width = `${task.progress}%`;
+                    bar.appendChild(progFill);
+
+                    const label = document.createElement('span');
+                    label.className = 'relative z-10 truncate';
+                    label.textContent = `${task.title} (${task.progress}%)`;
+                    bar.appendChild(label);
+
+                    enableBarDragging(bar, task);
+                    barRow.appendChild(bar);
+
+                    if (task.revisionDays > 0) {
+                        const revBar = document.createElement('div');
+                        revBar.style.left = `${leftPos + barWidth + 2}px`;
+                        revBar.style.width = `${(task.revisionDays * colWidth) - 4}px`;
+                        revBar.className = 'absolute h-6 rounded-md bg-purple-500/30 border border-purple-400 border-dashed flex items-center justify-center text-[9px] font-bold text-purple-300 z-10';
+                        revBar.textContent = `+${task.revisionDays}d Rev`;
+                        barRow.appendChild(revBar);
+                    }
+                }
+
+                barsContainer.appendChild(barRow);
+            });
+        }
+
+        function enableBarDragging(barElement, task) {
+            let startX = 0;
+            let initialStartDay = task.startDay;
+            const columnWidths = { compact: 36, standard: 54, detailed: 72 };
+            const colWidth = columnWidths[state.zoomScale] || 54;
+
+            barElement.onmousedown = (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                initialStartDay = task.startDay;
+
+                const onMouseMove = (moveEvent) => {
+                    const deltaX = moveEvent.clientX - startX;
+                    const dayDelta = Math.round(deltaX / colWidth);
+                    const newStartDay = Math.max(1, Math.min(34 - task.duration, initialStartDay + dayDelta));
+
+                    if (newStartDay !== task.startDay) {
+                        task.startDay = newStartDay;
+                        playSound('shift');
+                        renderGanttChart();
+                    }
+                };
+
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    saveToStorage();
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+        }
+
+        function shiftTask(taskId, delta) {
+            const proj = getCurrentProject();
+            const task = proj.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.startDay = Math.max(1, Math.min(34 - task.duration, task.startDay + delta));
+                playSound('shift');
+                saveToStorage();
+                renderGanttChart();
+            }
+        }
+
+        function addRevision(taskId) {
+            const proj = getCurrentProject();
+            const task = proj.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.revisionDays = (task.revisionDays || 0) + 2;
+                playSound('shift');
+                saveToStorage();
+                renderGanttChart();
+            }
+        }
+
+        function quickUpdateProgress(taskId) {
+            const proj = getCurrentProject();
+            const task = proj.tasks.find(t => t.id === taskId);
+            if (task) {
+                let newProg = prompt(`Update progress % for "${task.title}":`, task.progress);
+                if (newProg !== null) {
+                    newProg = Math.max(0, Math.min(100, parseInt(newProg) || 0));
+                    task.progress = newProg;
+                    if (newProg === 100) {
+                        playSound('complete');
+                        triggerConfetti();
+                    } else {
+                        playSound('click');
+                    }
+                    saveToStorage();
+                    renderGanttChart();
+                }
+            }
+        }
+
+        function inlineEditTaskTitle(taskId) {
+            const proj = getCurrentProject();
+            const task = proj.tasks.find(t => t.id === taskId);
+            if (task) {
+                const newTitle = prompt("Edit Task Title:", task.title);
+                if (newTitle && newTitle.trim()) {
+                    task.title = newTitle.trim();
+                    saveToStorage();
+                    renderGanttChart();
+                }
+            }
+        }
+
+        function editProjectTitleInline() {
+            const proj = getCurrentProject();
+            const newTitle = prompt("Edit Project Title:", proj.title);
+            if (newTitle && newTitle.trim()) {
+                proj.title = newTitle.trim();
+                saveToStorage();
+                renderGanttChart();
+            }
+        }
+
+        function setZoomScale(scale) {
+            state.zoomScale = scale;
+            ['compact', 'standard', 'detailed'].forEach(s => {
+                const btn = document.getElementById(`zoom-${s}`);
+                if (s === scale) {
+                    btn.className = "btn-micro px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-600 text-white shadow-xs";
+                } else {
+                    btn.className = "btn-micro px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+                }
+            });
+            renderGanttChart();
+        }
+
+        function toggleDateFormat() {
+            state.dateFormat = document.getElementById('gantt-date-format').value;
+            renderGanttChart();
+        }
+
+        function openModal(id) {
+            playSound('click');
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'kanbanModal') renderKanbanBoard();
+            if (id === 'mindmapModal') renderMindMap();
+        }
+
+        function closeModal(id) {
+            playSound('click');
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openNewTaskModal() {
+            document.getElementById('task-modal-title').textContent = "Create New Task";
+            document.getElementById('modal-task-id').value = "";
+            document.getElementById('modal-task-name').value = "";
+            document.getElementById('modal-task-assignee').value = "Alex R.";
+            document.getElementById('modal-task-points').value = 3;
+            document.getElementById('modal-task-start').value = 1;
+            document.getElementById('modal-task-duration').value = 5;
+            document.getElementById('modal-task-progress').value = 0;
+            openModal('taskModal');
+        }
+
+        function openEditTaskModal(taskId) {
+            const proj = getCurrentProject();
+            const task = proj.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('task-modal-title').textContent = "Edit Task";
+            document.getElementById('modal-task-id').value = task.id;
+            document.getElementById('modal-task-name').value = task.title;
+            document.getElementById('modal-task-assignee').value = task.assignee;
+            document.getElementById('modal-task-points').value = task.points;
+            document.getElementById('modal-task-start').value = task.startDay;
+            document.getElementById('modal-task-duration').value = task.duration;
+            document.getElementById('modal-task-priority').value = task.priority;
+            document.getElementById('modal-task-progress').value = task.progress;
+            document.getElementById('modal-task-milestone').value = task.isMilestone ? "true" : "false";
+
+            openModal('taskModal');
+        }
+
+        function handleSaveTask(e) {
+            e.preventDefault();
+            const taskId = document.getElementById('modal-task-id').value;
+            const proj = getCurrentProject();
+
+            const title = document.getElementById('modal-task-name').value;
+            const assignee = document.getElementById('modal-task-assignee').value;
+            const points = parseInt(document.getElementById('modal-task-points').value) || 1;
+            const startDay = parseInt(document.getElementById('modal-task-start').value) || 1;
+            const duration = parseInt(document.getElementById('modal-task-duration').value) || 1;
+            const priority = document.getElementById('modal-task-priority').value;
+            const progress = parseInt(document.getElementById('modal-task-progress').value) || 0;
+            const isMilestone = document.getElementById('modal-task-milestone').value === "true";
+
+            if (taskId) {
+                const task = proj.tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.title = title;
+                    task.assignee = assignee;
+                    task.points = points;
+                    task.startDay = startDay;
+                    task.duration = duration;
+                    task.priority = priority;
+                    task.progress = progress;
+                    task.isMilestone = isMilestone;
+                }
+            } else {
+                const newTask = {
+                    id: 't-' + Date.now(),
+                    title, assignee, points, startDay, duration, priority, progress, isMilestone,
+                    revisionDays: 0, subtasks: []
+                };
+                proj.tasks.push(newTask);
+            }
+
+            if (progress === 100) triggerConfetti();
+            saveToStorage();
+            closeModal('taskModal');
+            renderGanttChart();
+        }
+
+        function deleteTask(taskId) {
+            if (confirm("Are you sure you want to delete this task?")) {
+                const proj = getCurrentProject();
+                proj.tasks = proj.tasks.filter(t => t.id !== taskId);
+                playSound('delete');
+                saveToStorage();
+                renderGanttChart();
+            }
+        }
+
+        function openNewProjectModal() {
+            openModal('projectModal');
+        }
+
+        function handleCreateProject(e) {
+            e.preventDefault();
+            const title = document.getElementById('modal-project-title').value;
+            const subtitle = document.getElementById('modal-project-subtitle').value;
+            const theme = document.getElementById('modal-project-theme').value;
+            const deadline = document.getElementById('modal-project-deadline').value;
+
+            const newProj = {
+                id: 'proj-' + Date.now(),
+                title, subtitle, theme, deadline, category: 'Development',
+                tasks: [
+                    { id: 't-init', title: 'Initial Project Specs', assignee: 'Alex R.', points: 3, priority: 'HIGH', progress: 100, startDay: 1, duration: 4, isMilestone: false, revisionDays: 0, subtasks: [] }
+                ]
+            };
+
+            state.projects.push(newProj);
+            saveToStorage();
+            closeModal('projectModal');
+            renderProjectsBentoGrid();
+            selectProjectAndOpenGantt(newProj.id);
+        }
+
+        function deleteProject(projId) {
+            if (confirm("Are you sure you want to delete this project?")) {
+                state.projects = state.projects.filter(p => p.id !== projId);
+                playSound('delete');
+                saveToStorage();
+                renderProjectsBentoGrid();
+            }
+        }
+
+        function renderKanbanBoard() {
+            const container = document.getElementById('kanban-board-container');
+            container.innerHTML = '';
+            const proj = getCurrentProject();
+
+            const cols = [
+                { title: 'To Do', filter: t => t.progress === 0 },
+                { title: 'In Progress', filter: t => t.progress > 0 && t.progress < 100 },
+                { title: 'In Review', filter: t => t.revisionDays > 0 },
+                { title: 'Completed', filter: t => t.progress === 100 }
+            ];
+
+            cols.forEach(col => {
+                const tasksInCol = proj.tasks.filter(col.filter);
+                const colHtml = `
+                    <div class="bg-slate-100 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3 min-h-[280px]">
+                        <div class="flex items-center justify-between font-bold text-xs text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-200 dark:border-slate-700">
+                            <span>${col.title}</span>
+                            <span class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-[10px]">${tasksInCol.length}</span>
+                        </div>
+                        <div class="flex flex-col gap-2 flex-1">
+                            ${tasksInCol.map(t => `
+                                <div class="bg-white dark:bg-darkcard p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col gap-2 text-xs">
+                                    <div class="font-semibold text-slate-900 dark:text-white">${t.title}</div>
+                                    <div class="flex items-center justify-between text-[10px] text-slate-500">
+                                        <span>${t.assignee}</span>
+                                        <span class="font-bold text-blue-500">${t.progress}%</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', colHtml);
+            });
+        }
+
+        function renderMindMap() {
+            const svg = document.getElementById('mindmap-svg');
+            svg.innerHTML = '';
+            const proj = getCurrentProject();
+
+            const width = svg.clientWidth || 800;
+            const height = svg.clientHeight || 400;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            let svgContent = `
+                <g>
+                    <rect x="${centerX - 90}" y="${centerY - 25}" width="180" height="50" rx="15" fill="#3b82f6" />
+                    <text x="${centerX}" y="${centerY + 5}" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">${proj.title.substring(0, 22)}</text>
+                </g>
+            `;
+
+            const tasks = proj.tasks.slice(0, 8);
+            const radius = 170;
+            tasks.forEach((t, i) => {
+                const angle = (i / tasks.length) * (2 * Math.PI);
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+
+                svgContent += `<line x1="${centerX}" y1="${centerY}" x2="${x}" y2="${y}" stroke="${t.progress === 100 ? '#10b981' : '#64748b'}" stroke-width="2" stroke-dasharray="4" />`;
+                svgContent += `
+                    <g>
+                        <rect x="${x - 65}" y="${y - 18}" width="130" height="36" rx="10" fill="${t.progress === 100 ? '#10b981' : '#1e293b'}" stroke="#334155" />
+                        <text x="${x}" y="${y + 4}" fill="#ffffff" font-size="10" font-weight="600" text-anchor="middle">${t.title.substring(0, 15)}</text>
+                    </g>
+                `;
+            });
+
+            svg.innerHTML = svgContent;
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function triggerStreakBonus() {
+            playSound('complete');
+            triggerConfetti();
+            alert("🔥 5-Day Sprint Streak Bonus Activated! +150 XP Velocity Boost!");
+        }
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.projects, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `quantum_flow_projects_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        state.projects = imported;
+                        saveToStorage();
+                        renderProjectsBentoGrid();
+                        renderGanttChart();
+                        alert("Projects data imported successfully!");
+                    }
+                } catch(err) {
+                    alert("Invalid JSON format!");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetData() {
+            if (confirm("Reset to default sample projects?")) {
+                state.projects = DEFAULT_PROJECTS;
+                saveToStorage();
+                renderProjectsBentoGrid();
+                renderGanttChart();
+            }
+        }
+
+        function exportPdf() {
+            window.print();
+        }
+
+        window.onload = function() {
+            renderProjectsBentoGrid();
+            renderGanttChart();
+        };
+    </script>
+</body>
+</html>
